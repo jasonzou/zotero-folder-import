@@ -179,6 +179,12 @@ export class $FolderImport {
       label: 'Add Files from Folder…',
       oncommand: 'Zotero.FolderImport.addAttachmentsFromFolder()',
     })
+
+    ztoolkit.Menu.register('collection', {
+      tag: 'menuitem',
+      label: 'Import Files from Folder…',
+      oncommand: 'Zotero.FolderImport.addAttachmentsFromFolder()',
+    })
   }
 
   public onMainWindowUnload(win: Window) {

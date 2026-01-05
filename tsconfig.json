@@ -15,7 +15,7 @@
     "lib": [ "es2019", "dom", "ES2021.WeakRef" ],
     "types": [ "node" ],
     "typeRoots": [ "./node_modules/@types" ],
-    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
   },
   "include": [ "bootstrap.ts", "content/folder-import.ts", "content/globals.d.ts", "node_modules/zotero-types" ],
   "exclude": [
