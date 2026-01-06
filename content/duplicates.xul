@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE window SYSTEM "chrome://zotero-folder-import/locale/zotero-folder-import.dtd">
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://zotero-folder-import/skin/overlay.css" type="text/css"?>
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" xmlns:html="http://www.w3.org/1999/xhtml"
+  title="Review Duplicate Files"
+  buttons="accept,cancel"
+  onload="onLoad();"
+  ondialogaccept="return onAccept();"
+  ondialogcancel="return onCancel();"
+  >
+
+  <vbox flex="1" style="margin: 10px;">
+    <label value="Select duplicate files to skip:"/>
+    <html:select id="duplicates-list" multiple="multiple" size="15" style="width: 600px; height: 400px;"/>
+    <label id="duplicate-count" value=""/>
+  </vbox>
+
+  <script src="duplicates.js"/>
+</dialog>

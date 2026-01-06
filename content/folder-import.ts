@@ -250,6 +250,60 @@ export class $FolderImport {
     }
   }
 
+  private async checkExistingItems(files: string[], libraryID: number): Promise<Map<string, any>> {
+    const existingItems = new Map<string, any>()
+    const library = await Zotero.Libraries.getAsync(libraryID)
+    const items = await library.getItemsAsync()
+
+    for (const item of items) {
+      if (item.isAttachment()) {
+        const attachment = await item.getSourceFileAsync()
+        if (attachment) {
+          existingItems.set(attachment.path, item)
+        }
+      }
+    }
+
+    const duplicates = new Map<string, any>()
+    for (const file of files) {
+      if (existingItems.has(file)) {
+        duplicates.set(file, existingItems.get(file))
+      }
+    }
+
+    return duplicates
+  }
+
+  private async checkExistingItemsByName(files: string[], libraryID: number): Promise<Map<string, any[]>> {
+    const existingItems = new Map<string, any[]>()
+    const library = await Zotero.Libraries.getAsync(libraryID)
+    const items = await library.getItemsAsync()
+
+    for (const item of items) {
+      if (item.isAttachment()) {
+        const attachment = await item.getSourceFileAsync()
+        if (attachment) {
+          const filename = OS.Path.basename(attachment.path)
+          if (!existingItems.has(filename)) {
+            existingItems.set(filename, [])
+          }
+          existingItems.get(filename)!.push(item)
+        }
+      }
+    }
+
+    const duplicates = new Map<string, any[]>()
+    for (const file of files) {
+      const filename = OS.Path.basename(file)
+      const itemsWithSameName = existingItems.get(filename)
+      if (itemsWithSameName) {
+        duplicates.set(file, itemsWithSameName)
+      }
+    }
+
+    return duplicates
+  }
+
   public async addAttachmentsFromFolder() {
     log.debug('addAttachmentsFromFolder')
     await Zotero.Schema.schemaUpdatePromise
@@ -281,12 +335,99 @@ export class $FolderImport {
     // Zotero.Translators.getAllForType('import')
 
     log.debug(`scan complete: ${JSON.stringify(Array.from(root.extensions))} (${root.extensions.size})`)
+
     if (root.extensions.size) {
       const collectionTreeRow = zoteroPane.getCollectionTreeRow()
+      const libraryID = collectionTreeRow.ref.libraryID
+
+      Zotero.showZoteroPaneProgressMeter('Checking for duplicates...')
+
+      const allFiles = [...root.files]
+      for (const folder of root.folders) {
+        allFiles.push(...folder.files)
+      }
+
+      const existingDuplicates = await this.checkExistingItems(allFiles, libraryID)
+      const existingDuplicatesByName = await this.checkExistingItemsByName(allFiles, libraryID)
+      const rmlintDuplicates = new Set(await this.duplicates(folder))
+
+      Zotero.hideZoteroPaneOverlays()
+
+      const duplicateInfo = []
+      for (const [file, item] of existingDuplicates) {
+        duplicateInfo.push({
+          file,
+          type: 'existing',
+          message: `Already in library: ${item.getDisplayTitle()}`,
+          item,
+        })
+      }
+
+      for (const [file, items] of existingDuplicatesByName) {
+        if (!existingDuplicates.has(file)) {
+          duplicateInfo.push({
+            file,
+            type: 'name-match',
+            message: `File with same name already in library (${items.length} item${items.length > 1 ? 's' : ''})`,
+            items,
+          })
+        }
+      }
+
+      for (const file of rmlintDuplicates) {
+        duplicateInfo.push({
+          file,
+          type: 'duplicate-in-folder',
+          message: 'Duplicate within import folder',
+        })
+      }
+
+      let skippedFiles = new Set<string>()
+
+      if (duplicateInfo.length > 0) {
+        const count = duplicateInfo.length
+        const buttons = Services.prompt.BUTTON_TITLE_IS_STRING * Services.prompt.BUTTON_POS_0
+          + Services.prompt.BUTTON_TITLE_IS_STRING * Services.prompt.BUTTON_POS_1
+          + Services.prompt.BUTTON_POS_0_DEFAULT
+        const button0 = Services.prompt.BUTTON_POS_0
+        const button1 = Services.prompt.BUTTON_POS_1
+
+        const result = Services.prompt.confirmEx(
+          null,
+          'Duplicate Files Detected',
+          `${count} duplicate file${count > 1 ? 's' : ''} found. What would you like to do?`,
+          buttons,
+          'Review & Select',
+          'Skip All Duplicates',
+          null,
+          null,
+          {},
+        )
+
+        if (result === button0) {
+          const dialogArgs: { duplicates: any; skippedFiles: Set<string> } = { duplicates: duplicateInfo, skippedFiles: new Set() }
+          const reviewWindow = Zotero.getMainWindow().openDialog(
+            'chrome://zotero-folder-import/content/duplicates.xul',
+            '',
+            'chrome,dialog,centerscreen,resizable',
+            dialogArgs,
+          )
+          await new Promise(resolve => {
+            reviewWindow.addEventListener('unload', () => resolve(true))
+          })
+          skippedFiles = dialogArgs.skippedFiles
+        }
+        else if (result === button1) {
+          for (const info of duplicateInfo) {
+            skippedFiles.add(info.file)
+          }
+        }
+      }
+
       const params = {
         link: !collectionTreeRow.isWithinGroup() && !collectionTreeRow.isPublications(),
         extensions: root.extensions,
-        libraryID: collectionTreeRow.ref.libraryID,
+        libraryID: libraryID,
         progress: this,
       } // TODO: warn for .lnk files when params.link === false
 
@@ -322,7 +463,11 @@ export class $FolderImport {
         const pdfs = []
         Zotero.showZoteroPaneProgressMeter('Importing attachments...', true)
         this.status = { total: root.selected(params.extensions), done: 0 }
-        await root.import(params, zoteroPane.getSelectedCollection(), pdfs, new Set(await this.duplicates(folder)))
+
+        const rmlintDuplicatesSet = new Set(await this.duplicates(folder))
+        const allDuplicates = new Set([...rmlintDuplicatesSet, ...skippedFiles])
+
+        await root.import(params, zoteroPane.getSelectedCollection(), pdfs, allDuplicates)
         Zotero.hideZoteroPaneOverlays()
         if (pdfs.length) {
           Zotero.showZoteroPaneProgressMeter('Fetching metadata for attachments...')
