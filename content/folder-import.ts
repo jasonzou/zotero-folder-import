@@ -252,8 +252,8 @@ export class $FolderImport {
 
   private async checkExistingItems(files: string[], libraryID: number): Promise<Map<string, any>> {
     const existingItems = new Map<string, any>()
-    const library = await Zotero.Libraries.getAsync(libraryID)
-    const items = await library.getItemsAsync()
+    const library = Zotero.Libraries.get(libraryID)
+    const items = library.getItems()
 
     for (const item of items) {
       if (item.isAttachment()) {
@@ -276,8 +276,8 @@ export class $FolderImport {
 
   private async checkExistingItemsByName(files: string[], libraryID: number): Promise<Map<string, any[]>> {
     const existingItems = new Map<string, any[]>()
-    const library = await Zotero.Libraries.getAsync(libraryID)
-    const items = await library.getItemsAsync()
+    const library = Zotero.Libraries.get(libraryID)
+    const items = library.getItems()
 
     for (const item of items) {
       if (item.isAttachment()) {
@@ -347,32 +347,32 @@ export class $FolderImport {
         allFiles.push(...folder.files)
       }
 
-      const existingDuplicates = await this.checkExistingItems(allFiles, libraryID)
-      const existingDuplicatesByName = await this.checkExistingItemsByName(allFiles, libraryID)
+      // const existingDuplicates = await this.checkExistingItems(allFiles, libraryID)
+      // const existingDuplicatesByName = await this.checkExistingItemsByName(allFiles, libraryID)
       const rmlintDuplicates = new Set(await this.duplicates(folder))
 
       Zotero.hideZoteroPaneOverlays()
 
       const duplicateInfo = []
-      for (const [file, item] of existingDuplicates) {
-        duplicateInfo.push({
-          file,
-          type: 'existing',
-          message: `Already in library: ${item.getDisplayTitle()}`,
-          item,
-        })
-      }
+      // for (const [file, item] of existingDuplicates) {
+      //   duplicateInfo.push({
+      //     file,
+      //     type: 'existing',
+      //     message: `Already in library: ${item.getDisplayTitle()}`,
+      //     item,
+      //   })
+      // }
 
-      for (const [file, items] of existingDuplicatesByName) {
-        if (!existingDuplicates.has(file)) {
-          duplicateInfo.push({
-            file,
-            type: 'name-match',
-            message: `File with same name already in library (${items.length} item${items.length > 1 ? 's' : ''})`,
-            items,
-          })
-        }
-      }
+      // for (const [file, items] of existingDuplicatesByName) {
+      //   if (!existingDuplicates.has(file)) {
+      //     duplicateInfo.push({
+      //       file,
+      //       type: 'name-match',
+      //       message: `File with same name already in library (${items.length} item${items.length > 1 ? 's' : ''})`,
+      //       items,
+      //     })
+      //   }
+      // }
 
       for (const file of rmlintDuplicates) {
         duplicateInfo.push({
