@@ -6,8 +6,8 @@
     "lint": "dprint fmt bootstrap.ts content/*.ts && dprint check bootstrap.ts content/*.ts",
     "prebuild": "npm run lint",
     "build": "rm -rf build && tsc --noEmit && node esbuild.js",
-    "postbuild": "zotero-plugin-zipup build zotero-folder-import",
-    "release": "zotero-plugin-release",
+    "postbuild": "zp-zipup build zotero-folder-import",
+    "release": "zp-release",
     "postversion": "git push --follow-tags",
     "start": "npm run build && zotero-start",
     "ncu": "ncu -u && npm i && git add package.json package-lock.json && git commit -m ncu"
@@ -25,15 +25,15 @@
   },
   "homepage": "https://github.com/retorquere/zotero-folder-import",
   "devDependencies": {
+    "dprint": "^0.50.0",
+    "esbuild": "^0.25.5",
     "pretty": "^2.0.0",
     "pug": "^3.0.3",
-    "esbuild": "^0.25.5",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
-    "zotero-types": "^4.0.3",
-    "dprint": "^0.50.0",
-    "zotero-plugin": "5.0.18"
+    "zotero-plugin": "^8.0.8",
+    "zotero-types": "^4.0.3"
   },
   "xpi": {
     "name": "Folder Import for Zotero",

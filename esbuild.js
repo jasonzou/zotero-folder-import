@@ -4,12 +4,12 @@ const esbuild = require('esbuild')
 const rmrf = require('rimraf')
 const pug = require('pug')
 const pretty = require('pretty')
+const { execSync } = require('child_process')
 
 rmrf.sync('gen')
 
-require('zotero-plugin/copy-assets')
-require('zotero-plugin/rdf')
-require('zotero-plugin/version')
+execSync('node node_modules/zotero-plugin/dist/cjs/bin/make-dirs.cjs', { stdio: 'inherit' })
+execSync('node node_modules/zotero-plugin/dist/cjs/bin/version.cjs', { stdio: 'inherit' })
 
 async function bundle(entry) {
   const outdir = path.join('build', path.basename(path.dirname(entry)))
@@ -18,7 +18,7 @@ async function bundle(entry) {
     outdir,
     bundle: true,
     format: 'iife',
-    target: ['firefox60'],
+    target: ['firefox115'],
     treeShaking: true,
     minify: false,
     drop: ['console'],
@@ -48,6 +48,9 @@ async function build() {
   await bundle('content/folder-import.ts')
   await bundle('content/bulkimport.ts')
   fs.writeFileSync('build/content/wizard.xhtml', pretty(pug.compileFile('content/wizard.pug')()))
+
+  execSync('node node_modules/zotero-plugin/dist/cjs/bin/copy-assets.cjs', { stdio: 'inherit' })
+  execSync('node node_modules/zotero-plugin/dist/cjs/bin/make-manifest.cjs', { stdio: 'inherit' })
 }
 
 build().catch(err => {

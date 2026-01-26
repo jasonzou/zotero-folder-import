@@ -6,7 +6,8 @@
     "importHelpers": true,
     "target": "es2017",
     "disableSizeLimit": true,
-    "module": "commonjs",
+    "module": "ES2020",
+    "moduleResolution": "bundler",
     "noImplicitAny": false,
     "removeComments": false,
     "preserveConstEnums": false,
@@ -15,7 +16,7 @@
     "lib": [ "es2019", "dom", "ES2021.WeakRef" ],
     "types": [ "node" ],
     "typeRoots": [ "./node_modules/@types" ],
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "include": [ "bootstrap.ts", "content/folder-import.ts", "content/globals.d.ts", "node_modules/zotero-types" ],
   "exclude": [

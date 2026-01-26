@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<!DOCTYPE window SYSTEM "chrome://zotero-better-bibtex/locale/zotero-better-bibtex.dtd">
 <?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
 <?xml-stylesheet href="chrome://zotero-folder-import/skin/overlay.css" type="text/css"?>
-<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" xmlns:html="http://www.w3.org/1999/xhtml"
+<window xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" xmlns:html="http://www.w3.org/1999/xhtml">
+<dialog
   title="Add Files from Folder…"
   buttons="accept,cancel"
   onload="onLoad();"
@@ -12,8 +12,7 @@
 
   <html:select multiple="multiple" size="10" id="folder-import-extensions">
   </html:select>
-  <script>
-    //<![CDATA[
+  <script><![CDATA[
     function toggle(event, option) {
       if (option.getAttribute('selected')) {
         option.removeAttribute('selected')
@@ -31,8 +30,7 @@
     select.addEventListener('keydown', event => {
       if (select.selectedIndex >= 0 && event.keyCode === 32) toggle(event, select.options[select.selectedIndex])
     })
-    //]]>
-  </script>
+  ]]></script>
 
   <radiogroup id="folder-import-link-or-import">
     <radio id="folder-import-link" label="Link to files" value="link"/>
@@ -42,3 +40,4 @@
 
   <script src="bulkimport.js"/>
 </dialog>
+</window>

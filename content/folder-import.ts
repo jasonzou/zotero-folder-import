@@ -1,11 +1,9 @@
 declare var Zotero: any // eslint-disable-line no-var
-declare const FileUtils: any
 declare const Services: any
-
 declare const Components: any
-Components.utils.import('resource://gre/modules/FileUtils.jsm')
-
 declare const ChromeUtils: any
+declare const Cc: any
+declare const Ci: any
 
 import { FilePickerHelper, ZoteroToolkit } from 'zotero-plugin-toolkit'
 const ztoolkit = new ZoteroToolkit()
@@ -210,7 +208,8 @@ export class $FolderImport {
     const duplicates: string = PathUtils.join(Zotero.getTempDirectory().path as string, `rmlint${Zotero.Utilities.randomString()}.json`)
 
     try {
-      const cmd = new FileUtils.File(rmlint)
+      const cmd = Cc['@mozilla.org/file/local;1'].createInstance(Ci.nsIFile)
+      cmd.initWithPath(rmlint)
       if (!cmd.isExecutable()) return []
 
       const proc = Components.classes['@mozilla.org/process/util;1'].createInstance(Components.interfaces.nsIProcess)
@@ -248,60 +247,6 @@ export class $FolderImport {
       catch (err) {
       }
     }
-  }
-
-  private async checkExistingItems(files: string[], libraryID: number): Promise<Map<string, any>> {
-    const existingItems = new Map<string, any>()
-    const library = Zotero.Libraries.get(libraryID)
-    const items = library.getItems()
-
-    for (const item of items) {
-      if (item.isAttachment()) {
-        const attachment = await item.getSourceFileAsync()
-        if (attachment) {
-          existingItems.set(attachment.path, item)
-        }
-      }
-    }
-
-    const duplicates = new Map<string, any>()
-    for (const file of files) {
-      if (existingItems.has(file)) {
-        duplicates.set(file, existingItems.get(file))
-      }
-    }
-
-    return duplicates
-  }
-
-  private async checkExistingItemsByName(files: string[], libraryID: number): Promise<Map<string, any[]>> {
-    const existingItems = new Map<string, any[]>()
-    const library = Zotero.Libraries.get(libraryID)
-    const items = library.getItems()
-
-    for (const item of items) {
-      if (item.isAttachment()) {
-        const attachment = await item.getSourceFileAsync()
-        if (attachment) {
-          const filename = OS.Path.basename(attachment.path)
-          if (!existingItems.has(filename)) {
-            existingItems.set(filename, [])
-          }
-          existingItems.get(filename)!.push(item)
-        }
-      }
-    }
-
-    const duplicates = new Map<string, any[]>()
-    for (const file of files) {
-      const filename = OS.Path.basename(file)
-      const itemsWithSameName = existingItems.get(filename)
-      if (itemsWithSameName) {
-        duplicates.set(file, itemsWithSameName)
-      }
-    }
-
-    return duplicates
   }
 
   public async addAttachmentsFromFolder() {
@@ -407,7 +352,7 @@ export class $FolderImport {
         if (result === button0) {
           const dialogArgs: { duplicates: any; skippedFiles: Set<string> } = { duplicates: duplicateInfo, skippedFiles: new Set() }
           const reviewWindow = Zotero.getMainWindow().openDialog(
-            'chrome://zotero-folder-import/content/duplicates.xul',
+            'chrome://zotero-folder-import/content/duplicates.xhtml',
             '',
             'chrome,dialog,centerscreen,resizable',
             dialogArgs,
